@@ -184,7 +184,7 @@ function vpsie_ChangePackage($params) {
     if (!$json['error']) {
 		$result = "success";
 	} else {
-		$result = $json['errorCode'];
+		$result = $json['response'];
 	}
 	logModuleCall('vpsie','Resize',$result,json_encode($json),'','');
 	return $result;
@@ -203,9 +203,6 @@ $code = '
 	        cursor: pointer;
 	        color: #000;
 	    }
-
-		table.table{
-		}
 	</style>
 	<div id="overlay"></div>
 	<table class="table">
