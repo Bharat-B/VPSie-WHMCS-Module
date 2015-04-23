@@ -69,8 +69,6 @@ function vpsie_CreateAccount($params) {
     $producttype = $params["producttype"]; # Product Type: hostingaccount, reselleraccount, server or other
     $domain = $params["domain"];
     $offerid = $params['configoption1'];
-	//$username = $params["username"];
-	//$password = $params["password"];
     $clientsdetails = $params["clientsdetails"]; # Array of clients details - firstname, lastname, email, country, etc...
     $osid = $params["customfields"]['OS']; # Array of custom field values for the product
     $dcid = $params["customfields"]['DC']; # Array of custom field values for the product
@@ -84,9 +82,6 @@ function vpsie_CreateAccount($params) {
     );
 
     $json = vpsie_Call($call,$vparams,'POST');
-//	$json = '{"status":"running","process_id":"d5cd623f-3236-449e-8305-3bc5f1c074b3","vpsie_id":"b27c362f-40be-4596-aeeb-1129d1dee973","name":"ahmed.com","ram":768,"cpu":1,"ssd":10,"bandwidth":1,"note":null,"created_on":"2015-04-19T14:53:08.000Z","password":"7Ot2As9J","autobackup":true,"public_ip":"162.220.53.23","private_ip":null,"os_slug":"CentOS 6.5 x86","distribution":"Centos","region":"VA"}';
-//	$json = "{\"status\":\"running\",\"process_id\":\"d5cd623f-3236-449e-8305-3bc5f1c074b3\",\"vpsie_id\":\"b27c362f-40be-4596-aeeb-1129d1dee973\",\"name\":\"ahmed.com\",\"ram\":768,\"cpu\":1,\"ssd\":10,\"bandwidth\":1,\"note\":null,\"created_on\":\"2015-04-19T14:53:08.000Z\",\"password\":\"7Ot2As9J\",\"autobackup\":true,\"public_ip\":\"162.220.53.186\",\"private_ip\":null,\"os_slug\":\"CentOS 6.5 x86\",\"distribution\":\"Centos\",\"region\":\"VA\"}";
-//	$json = json_decode($json,true);
 	if($json){
 	// vpsid of vpsie
 		$one = select_query("tblcustomfields","id",array("relid"=>$pid, "fieldname"=>'vpsid'));
@@ -101,17 +96,11 @@ function vpsie_CreateAccount($params) {
         	    update_query("tblcustomfieldsvalues",array("value" => $json['region']),array("relid" => $serviceid, "fieldid" => $twores['id']));
                 $three = select_query("tblcustomfields","id",array("relid" => $pid, "fieldname" => 'vpspassword'));
                 $threeres = mysql_fetch_array($three);
-		if($three){
-//			update_query("tblcustomfieldsvalues",array("value" => $json['password']),array("relid" => $serviceid, "fieldid" => $twores['id']));
-			update_query("tblhosting",array("password" => encrypt($json['password'])),array("id"=>$serviceid));
-	        }
-		}
-	/*	$three = select_query("tblcustomfields","id",array("relid" => $pid, "fieldname" => 'vpspwd'));
-		$threeres = mysql_fetch_array($three);
-		if($three){
-		    update_query("tblcustomfieldvalues",array("value"=>$json['password']),array("relid" => $serviceid, "fieldid" => $threeres['id']));
-			mysql_query("UPDATE `tblcustomfieldvalues` SET `value` = '".$json['password']."' WHERE `relid` = '$serviceid' AND `fieldid` = $threeresp'id']");*/
-	            $result = 'success';
+				if($three){
+					update_query("tblhosting",array("password" => encrypt($json['password'])),array("id"=>$serviceid));
+	        	}
+			}
+	        $result = 'success';
 		
         } else {
             $result = $json['response'];
