@@ -18,7 +18,7 @@ This is a VPSie VPS provisioning module made for WHMCS. Made using api provided 
 * Fill the above in vpsie/vpsie.php
 * Custom fields { Admin only => { text => { vpsid , cpu , ram , ssd } , dropdowns => { OS|Operating System , DC|Location } } }
 * Create product / service -> Module Settings , select Vpsie. You should see option for Offer Id fill it with appropriate offer id and its done.
-* OS | DC | Offer fields can be filled with data from this url http://apps.servertalks.com/vpsie/
+* OS | DC | Offer fields can be filled with data from this url https://vpsie.com/whmcs-vpsie-modules-variables/
 * Resize can be done using Change Package option , edit cpu , ram , disk fields and save them , then click Change Package on admin side to get it done.
 * You're good to go !
 
