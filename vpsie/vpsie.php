@@ -1,9 +1,10 @@
 
 <?php
+
 function vpsie_authCall($params = array()){
-    $params['grand_type'] = 'bearer';
-    $params['client_id'] = '';
-    $params['client_secret'] = '';
+    $vpsie['grand_type'] = 'bearer';
+    $vpsie['client_id'] = ""; // API key
+    $vpsie['client_secret'] = ""; // API pass
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_REFERER, $_SERVER ['HTTP_HOST']);
     curl_setopt($curl, CURLOPT_URL, 'https://api.vpsie.com/v1/token');
@@ -61,18 +62,15 @@ function vpsie_ConfigOptions() {
 }
 
 function vpsie_CreateAccount($params) {
-
     # ** The variables listed below are passed into all module functions **
-
     $serviceid = $params["serviceid"]; # Unique ID of the product/service in the WHMCS Database
     $pid = $params["pid"]; # Product/Service ID
     $producttype = $params["producttype"]; # Product Type: hostingaccount, reselleraccount, server or other
     $domain = $params["domain"];
     $offerid = $params['configoption1'];
     $clientsdetails = $params["clientsdetails"]; # Array of clients details - firstname, lastname, email, country, etc...
-    $osid = $params["customfields"]['OS']; # Array of custom field values for the product
-    $dcid = $params["customfields"]['DC']; # Array of custom field values for the product
-    //$configoptions = $params["configoptions"]; # Array of configurable option values for the product
+    $osid = $params["configoptions"]['OS'] ? $params["configoptions"]['OS'] : $params["customfields"]['OS']; # Array of custom field values or configurable optons for the product
+    $dcid = $params["configoptions"]['DC'] ? $params["configoptions"]['DC'] : $params["customfields"]['DC']; # Array of custom field values or configrable options for the product
     $call = 'https://api.vpsie.com/v1/vpsie';
     $vparams = array(
     	"offer_id" => $offerid,
@@ -82,13 +80,13 @@ function vpsie_CreateAccount($params) {
     );
 
     $json = vpsie_Call($call,$vparams,'POST');
-	if($json){
+	if($json['error'] != true){
 	// vpsid of vpsie
 		$one = select_query("tblcustomfields","id",array("relid"=>$pid, "fieldname"=>'vpsid'));
         	$oneres = mysql_fetch_array($one);
 	        if($one){
         	    update_query("tblcustomfieldsvalues",array("value" => $json['vpsie_id']),array("relid" => $serviceid, "fieldid" => $oneres['id']));
-	            update_query("tblhosting",array("dedicatedip"=>$json['public_ip'],"domain" => $json['name'],"username"=>'root'),array("id"=>$serviceid));
+	            update_query("tblhosting",array("dedicatedip"=>$json['ipv4'],"domain" => $json['name'],"username"=>'root'),array("id"=>$serviceid));
 	        }
 	        $two = select_query("tblcustomfields","id",array("relid" => $pid, "fieldname" => 'region'));
         	$twores = mysql_fetch_array($two);
@@ -98,17 +96,28 @@ function vpsie_CreateAccount($params) {
                 $threeres = mysql_fetch_array($three);
 				if($three){
 					update_query("tblhosting",array("password" => encrypt($json['password'])),array("id"=>$serviceid));
-	        	}
+        		}
 			}
 	        $result = 'success';
-		
         } else {
             $result = $json['response'];
         }
 	logModuleCall('vpsie','create',$result,json_encode($json),'','');
 	return $result;
 }
-
+function vpsie_AddPTR($params){
+	$call = "https://api.vpsie.com/v1/ptr/record";
+	$vparams = array( "ip" => $params['dedicatedip'] );
+	$json = vpsie_call($call,$vparams,'POST');
+	if(!$json['error']){
+		$result = 'success';
+	}else{
+		$result = $json['errorCode'];	
+	}
+	logModuleCall('vpsie','ptr',$result,json_encode($json),'','');
+	return $result;
+	
+}
 function vpsie_TerminateAccount($params) {
 	$call = "https://api.vpsie.com/v1/vpsie/".$params['customfields']['vpsid'];
 	$vparams = array();
@@ -149,7 +158,7 @@ function vpsie_Rebuild($params){
 	$vparams = array ();
 	$serviceid = $params["serviceid"];
 	$json = vpsie_Call($call,$vparams,'POST');
-    if (!$json['error']) {
+    	if (!$json['error']) {
 		$result = "success";
 	} else {
 		$result = $json['errorCode'];
@@ -157,9 +166,21 @@ function vpsie_Rebuild($params){
 	logModuleCall('vpsie','Rebuilt',$result,json_encode($json),'','');
 	return $result;
 }
-function vps_cpasswd($params){
-	vpsie_ChangePassword($params);
+function vpsie_Record($params){
+	$one = select_query("tblhosting","dedicatedip",array("id" =>$params["serviceid"]));
+	$oneres = mysql_fetch_assoc($one);
+        $call = "https://api.vpsie.com/v1/ptr/record";
+        $vparams = array ( "ip" => $oneres['dedicatedip'] );
+        $json = vpsie_Call($call,$vparams,'POST');
+        if (!$json['error']) {
+                $result = "success";
+        } else {
+                $result = $params['dedicatedip'];
+        }
+        logModuleCall('vpsie','PTR',$result,json_encode($json),'','');
+        return $result;
 }
+
 function vpsie_ChangePackage($params) {
 
 	$call = "https://api.vpsie.com/v1/vpsie/resize/".$params['customfields']['vpsid'];
@@ -173,7 +194,7 @@ function vpsie_ChangePackage($params) {
     if (!$json['error']) {
 		$result = "success";
 	} else {
-		$result = $json['response'];
+		$result = $json['errorCode'];
 	}
 	logModuleCall('vpsie','Resize',$result,json_encode($json),'','');
 	return $result;
@@ -192,6 +213,9 @@ $code = '
 	        cursor: pointer;
 	        color: #000;
 	    }
+
+		table.table{
+		}
 	</style>
 	<div id="overlay"></div>
 	<table class="table">
@@ -202,11 +226,15 @@ $code = '
 	<tr><td>Region: '.$json['region'].'</td></tr>
 	</table>';
 $code .= '<table class="table buttons">
-	<tr><td><a class="viaction btn btn-primary" va="reboot">Start<a/></td>
-	<td><a class="viaction btn btn-primary" va="shutdown">Shutdown</a></td>
+	<tr>
+	<td><a class="viaction btn btn-primary" va="shutdown">Power off</a></td>
 	<td><a class="viaction btn btn-primary" va="reboot">Reboot</a></td>
 	<td><a class="viaction btn btn-primary" va="ChangePassword">Reset Password</a></td>
-	<td><a class="viaction btn btn-primary" va="Rebuild">Rebuild</a></td></tr>
+	<td><a class="viaction btn btn-primary" va="Rebuild">Rebuild</a></td>
+	</tr>
+	<tr>
+	<td><a class="viaction btn btn-primary" va="Record">Add PTR Record</a></td>
+	</tr>
 	</table>';
 $call = 'https://api.vpsie.com/v1/vpsie/statistics/'.$params['customfields']['vpsid'];
 $vparams = array(); 
@@ -304,10 +332,11 @@ $code .= '
 		</script>
 ';
 $code .= '<table class="table">
-			<tr><td><center><h3>CPU Usage Stats</h3><br /><div style="width:500px; height:190px;" id="cpuband_holder"></div></center></td></tr>
-			<tr><td><center><h3>RAM Usage Stats</h3><br /><div style="width:500px; height:190px;" id="ramband_holder"></div></center></td></tr>
-			<tr><td><center><h3>Bandwidth Stats</h3><br /><div style="width:500px; height:190px;" id="bwband_holder"></div></center></td>
-</tr><tr><td><center><h3>Disk Stats</h3><br /><div style="width:500px; height:190px;" id="drwband_holder"></div></center></td></tr></table>';
+		<tr><td><center><h3>CPU Usage Stats</h3><br /><div style="width:500px; height:190px;" id="cpuband_holder"></div></center></td></tr>
+		<tr><td><center><h3>RAM Usage Stats</h3><br /><div style="width:500px; height:190px;" id="ramband_holder"></div></center></td></tr>
+		<tr><td><center><h3>Bandwidth Stats</h3><br /><div style="width:500px; height:190px;" id="bwband_holder"></div></center></td></tr>
+		<tr><td><center><h3>Disk Stats</h3><br /><div style="width:500px; height:190px;" id="drwband_holder"></div></center></td></tr>
+	</table>';
 	return $code;
 }
 
@@ -439,14 +468,36 @@ function vpsie_shutdown($params) {
 
 function vpsie_ClientAreaCustomButtonArray() {
     $buttonarray = array(
+	"PTR Records" => "extrapage",
 	);
 	return $buttonarray;
 }
+function vpsie_Records($params){
+	$call = 'https://api.vpsie.com/v1/ptr/records';
+        $vparams = array();
+        $json = vpsie_Call($call,$vparams,'GET');
+        $json = $json['ptrRecords'];
+	$code = "<table class=\"table\"><thead><tr><th>Host</th><th>PTR Record</th></tr><tbody>";
+	foreach($json as $record){
+		$code .="<tr><td>".$record['host']."</td><td>".$record['content_data']."</td></tr>";
+	}
+	$code .="</tbody></table>";
+        return $code;
 
+}
+function vpsie_extrapage($params) {
+  $pagearray = array(
+     'templatefile' => 'records',
+     'breadcrumb' => '<a href="#">PTR Records</a>',
+     'vars' => array( 'records' => vpsie_Records($params) )
+    );
+	return $pagearray;
+}
 function vpsie_AdminCustomButtonArray() {
     $buttonarray = array(
 	 "Force Reboot Server" => "reboot",
 	 "Shutdown Server" => "shutdown",
+	 "Add PTR Record" => "Record"
 	);
 	return $buttonarray;
 }
