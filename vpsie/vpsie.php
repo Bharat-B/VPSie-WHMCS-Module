@@ -1,10 +1,8 @@
-
 <?php
-
-function vpsie_authCall($params = array()){
+function vpsie_authCall($params){
     $vpsie['grand_type'] = 'bearer';
-    $vpsie['client_id'] = ""; // API key
-    $vpsie['client_secret'] = ""; // API pass
+    $vpsie['client_id'] = '';// API Key
+    $vpsie['client_secret'] = '';// API pass
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_REFERER, $_SERVER ['HTTP_HOST']);
     curl_setopt($curl, CURLOPT_URL, 'https://api.vpsie.com/v1/token');
@@ -12,14 +10,13 @@ function vpsie_authCall($params = array()){
     curl_setopt($curl, CURLOPT_POST, true);
     curl_setopt($curl, CURLOPT_TIMEOUT, 300);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params));
+    curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($vpsie));
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);   
     $json = curl_exec($curl);
     $result = json_decode($json,true);
     return $result;
 }
-
 function vpsie_Call($call,$params,$method){
     $k = vpsie_authCall();
     $header = array();
@@ -28,7 +25,6 @@ function vpsie_Call($call,$params,$method){
     curl_setopt($curl, CURLOPT_HTTPHEADER,$header);
     curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-
     if($method == 'GET') {
         foreach($params as $value){
             $call .='/'.$value;
@@ -48,19 +44,13 @@ function vpsie_Call($call,$params,$method){
     return $result;
     curl_close($curl);
 }
-
 function vpsie_ConfigOptions() {
-
 	# Should return an array of the module options for each product - maximum of 24
-
     $configarray = array(
 	 "Offer ID" => array( "Type" => "text", "Size" => "35")
 	);
-
 	return $configarray;
-
 }
-
 function vpsie_CreateAccount($params) {
     # ** The variables listed below are passed into all module functions **
     $serviceid = $params["serviceid"]; # Unique ID of the product/service in the WHMCS Database
@@ -78,7 +68,6 @@ function vpsie_CreateAccount($params) {
     	"datacenter_id" => $dcid,
     	"os_id" => $osid
     );
-
     $json = vpsie_Call($call,$vparams,'POST');
 	if($json['error'] != true){
 	// vpsid of vpsie
@@ -137,8 +126,6 @@ function vpsie_TerminateAccount($params) {
 	logModuleCall('vpsie','delete',$result,json_encode($json),'','');
         return $result;
 }
-
-
 function vpsie_ChangePassword($params) {
 	$call = "https://api.vpsie.com/v1/vpsie/password/".$params['customfields']['vpsid'];
 	$vparams = array ();
@@ -180,9 +167,7 @@ function vpsie_Record($params){
         logModuleCall('vpsie','PTR',$result,json_encode($json),'','');
         return $result;
 }
-
 function vpsie_ChangePackage($params) {
-
 	$call = "https://api.vpsie.com/v1/vpsie/resize/".$params['customfields']['vpsid'];
 	$vparams = array (
 		"cpu" => $params['customfields']['cpu'],
@@ -200,7 +185,6 @@ function vpsie_ChangePackage($params) {
 	return $result;
 }
 function vpsie_ClientArea($params) {
-
     # Output can be returned like this, or defined via a clientarea.tpl template file (see docs for more info)
 $call = 'https://api.vpsie.com/v1/vpsie/'.$params['customfields']['vpsid'];
 $vparams = array();
@@ -213,7 +197,6 @@ $code = '
 	        cursor: pointer;
 	        color: #000;
 	    }
-
 		table.table{
 		}
 	</style>
@@ -225,7 +208,7 @@ $code = '
 	<tr><td>Operating System: '.$json['os_slug'].'</td></tr>
 	<tr><td>Region: '.$json['region'].'</td></tr>
 	</table>';
-$code .= '<table class="table buttons">
+/*$code .= '<table class="table buttons">
 	<tr>
 	<td><a class="viaction btn btn-primary" va="shutdown">Power off</a></td>
 	<td><a class="viaction btn btn-primary" va="reboot">Reboot</a></td>
@@ -236,6 +219,7 @@ $code .= '<table class="table buttons">
 	<td><a class="viaction btn btn-primary" va="Record">Add PTR Record</a></td>
 	</tr>
 	</table>';
+*/
 $call = 'https://api.vpsie.com/v1/vpsie/statistics/'.$params['customfields']['vpsid'];
 $vparams = array(); 
 $json = vpsie_Call($call,$vparams,'POST');
@@ -275,8 +259,6 @@ $code .= '
 				';
 					
 				$code .= '
-
-
 				var chart = c3.generate({
 				    bindto: \'#bwband_holder\',
 				    data: {
@@ -339,26 +321,19 @@ $code .= '<table class="table">
 	</table>';
 	return $code;
 }
-
 /*function vpsie_AdminLink($params) {
-
 	$code = '<form action=\"http://'.$params["serverip"].'/controlpanel" method="post" target="_blank">
 <input type="hidden" name="user" value="'.$params["serverusername"].'" />
 <input type="hidden" name="pass" value="'.$params["serverpassword"].'" />
 <input type="submit" value="Login to Control Panel" />
 </form>';
 	return $code;
-
 }
-
 function vpsie_LoginLink($params) {
-
 	echo "<a href=\"http://".$params["serverip"]."/controlpanel?gotousername=".$params["username"]."\" target=\"_blank\" style=\"color:#cc0000\">login to control panel</a>";
-
 }
 */
 function vpsie_start($params){
-
 	$call = 'https://api.vpsie.com/v1/vpsie/start/'.$params;
 	$vparams = array();
 	$json = vpsie_Call($call,$vparams,'POST');
@@ -439,7 +414,6 @@ function vpsie_force_reboot($params){
 	return $theme;
 }*/
 function vpsie_reboot($params) {
-
 	$call = 'https://api.vpsie.com/v1/vpsie/force/restart/'.$params['customfields']['vpsid'];
 	$vparams = array();
 	$json = vpsie_Call($call,$vparams,'POST');
@@ -451,9 +425,7 @@ function vpsie_reboot($params) {
 	logModuleCall('vpsie','reboot',$result,json_encode($json),'','');
 	return $result;
 }
-
 function vpsie_shutdown($params) {
-
 	$call = 'https://api.vpsie.com/v1/vpsie/shutdown/'.$params['customfields']['vpsid'];
 	$vparams = array();
 	$json = vpsie_Call($call,$vparams,'POST');
@@ -465,10 +437,15 @@ function vpsie_shutdown($params) {
 	logModuleCall('vpsie','shutdown',$result,json_encode($json),'','');
 	return $result;
 }
-
 function vpsie_ClientAreaCustomButtonArray() {
     $buttonarray = array(
 	"PTR Records" => "extrapage",
+	"Force Reboot Server" => "reboot",
+	"Shutdown Server" => "shutdown",
+	"Add PTR Record" => "Record",
+	"Reset Password" => "ChangePassword",
+	"Rebuild" => "Rebuild"
+
 	);
 	return $buttonarray;
 }
@@ -483,7 +460,6 @@ function vpsie_Records($params){
 	}
 	$code .="</tbody></table>";
         return $code;
-
 }
 function vpsie_extrapage($params) {
   $pagearray = array(
@@ -498,12 +474,11 @@ function vpsie_AdminCustomButtonArray() {
 	 "Force Reboot Server" => "reboot",
 	 "Shutdown Server" => "shutdown",
 	 "Add PTR Record" => "Record"
+
 	);
 	return $buttonarray;
 }
-
 /*function vpsie_UsageUpdate($params) {
-
 	$serverid = $params['serverid'];
 	$serverhostname = $params['serverhostname'];
 	$serverip = $params['serverip'];
@@ -511,11 +486,8 @@ function vpsie_AdminCustomButtonArray() {
 	$serverpassword = $params['serverpassword'];
 	$serveraccesshash = $params['serveraccesshash'];
 	$serversecure = $params['serversecure'];
-
 	# Run connection to retrieve usage for all domains/accounts on $serverid
-
 	# Now loop through results and update DB
-
 	foreach ($results AS $domain=>$values) {
         update_query("tblhosting",array(
          "diskused"=>$values['diskusage'],
@@ -525,16 +497,13 @@ function vpsie_AdminCustomButtonArray() {
          "lastupdate"=>"now()",
         ),array("server"=>$serverid,"domain"=>$values['domain']));
     }
-
 }*/
-
 function vpsie_AdminServicesTabFields($params) {
 	$call = 'https://api.vpsie.com/v1/vpsie/'.$params['customfields']['vpsid'];
 	$vparams = array();
 	$json = vpsie_Call($call,$vparams,'GET');
 	$json = $json['vpsie'];
 	$status = ( $json['status'] === 'Running' ? true : false ) ? ( '#167a18' ) : ( '#d60000' );
-
     $fieldsarray = array();
     $fieldsarray['VPS Information'] = 'Status: <span style="color:'.$status.';font-weight:bold;">'.$json['status'].'</span>';
  
@@ -577,8 +546,6 @@ function vpsie_AdminServicesTabFields($params) {
     				';
     					
     				$code .= '
-
-
     				var chart = c3.generate({
     				    bindto: \'#bwband_holder\',
     				    data: {
@@ -641,7 +608,6 @@ function vpsie_AdminServicesTabFields($params) {
     		 </table>';
     $fieldsarray['VPS Information'] .= $code;
     return $fieldsarray;
-
 }
 /*
 function vpsie_AdminServicesTabFieldsSave($params) {
